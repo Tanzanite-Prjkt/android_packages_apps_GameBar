@@ -67,15 +67,19 @@ object GameBarConfig {
     
     // GPU configuration
     val gpuUsagePath: String
-        get() = context.getString(R.string.config_gpu_usage_path)
+        get() {
+            val resPath = context.getString(R.string.config_gpu_usage_path)
+            if (resPath != "dynamic" && resPath.isNotEmpty()) return resPath
+            return SysfsDetector.getGpuUsagePath() ?: resPath
+        }
     val gpuClockPath: String
-        get() = context.getString(R.string.config_gpu_clock_path)
+        get() = getGpuClockConfig().first ?: context.getString(R.string.config_gpu_clock_path)
     val gpuTempPath: String
         get() = getGpuTempConfig().first ?: context.getString(R.string.config_gpu_temp_path)
     val gpuTempDivider: Int
         get() = getGpuTempConfig().second
     val gpuClockDivider: Int
-        get() = context.resources.getInteger(R.integer.config_gpu_clock_divider)
+        get() = getGpuClockConfig().second
 
     fun getGpuTempConfig(): Pair<String?, Int> {
         val resPath = context.getString(R.string.config_gpu_temp_path)
@@ -91,10 +95,29 @@ object GameBarConfig {
         
         return Pair(detectorInfo.first ?: "/sys/class/kgsl/kgsl-3d0/temp", finalDivider)
     }
+
+    fun getGpuClockConfig(): Pair<String?, Int> {
+        val resPath = context.getString(R.string.config_gpu_clock_path)
+        val resDivider = context.resources.getInteger(R.integer.config_gpu_clock_divider)
+
+        if (resPath != "dynamic" && resPath.isNotEmpty()) {
+            val divider = if (resDivider > 0) resDivider else SysfsDetector.detectGpuClockDivider(resPath)
+            return Pair(resPath, divider)
+        }
+
+        val detectorInfo = SysfsDetector.getGpuClockInfo()
+        val finalDivider = if (resDivider > 0) resDivider else detectorInfo.second
+
+        return Pair(detectorInfo.first, finalDivider)
+    }
     
     // RAM configuration
     val ramFreqPath: String
-        get() = context.getString(R.string.config_ram_freq_path)
+        get() {
+            val resPath = context.getString(R.string.config_ram_freq_path)
+            if (resPath != "dynamic" && resPath.isNotEmpty()) return resPath
+            return SysfsDetector.getRamFreqPath() ?: resPath
+        }
     val ramTempPath: String
         get() = getRamTempConfig().first ?: context.getString(R.string.config_ram_temp_path)
     val ramTempDivider: Int

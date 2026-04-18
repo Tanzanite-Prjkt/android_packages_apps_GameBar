@@ -206,6 +206,21 @@ object SysfsDetector {
         "/sys/class/drm/sde-crtc-0/measured_fps"
     )
 
+    private val GPU_USAGE_PATHS = arrayOf(
+        "/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage",       // qcom
+        "/sys/kernel/ged/hal/gpu_utilization"                  // mtk
+    )
+
+    private val GPU_CLOCK_PATHS = arrayOf(
+        "/sys/class/kgsl/kgsl-3d0/gpuclk",                    // qcom (Hz)
+        "/sys/kernel/ged/hal/total_gpu_freq_mhz"              // mtk (MHz)
+    )
+
+    private val RAM_FREQ_PATHS = arrayOf(
+        "/sys/devices/system/cpu/bus_dcvs/DDR/cur_freq",      // qcom
+        "/sys/class/devfreq/mtk-dvfsrc-devfreq/cur_freq"      // mtk
+    )
+
     /**
      * Detect a valid sysfs path from a list of possible paths
      */
@@ -312,6 +327,43 @@ object SysfsDetector {
     
     fun getBatteryTempPath(): String? = detectPath("battery_temp", BATTERY_TEMP_PATHS)
 
+    fun getGpuUsagePath(): String? = detectPath("gpu_usage", GPU_USAGE_PATHS)
+
+    fun getRamFreqPath(): String? = detectPath("ram_freq", RAM_FREQ_PATHS)
+
+    /** @return GPU clock sysfs path and divider (auto-detected based on value range) */
+    fun getGpuClockInfo(): Pair<String?, Int> {
+        if (detectedPaths.containsKey("gpu_clock")) {
+            val path = detectedPaths["gpu_clock"]
+            val divider = detectedDividers["gpu_clock"] ?: 1000000
+            return Pair(path, divider)
+        }
+
+        val path = detectPath("gpu_clock", GPU_CLOCK_PATHS)
+        if (path != null) {
+            val divider = detectGpuClockDivider(path)
+            detectedDividers["gpu_clock"] = divider
+            return Pair(path, divider)
+        }
+        return Pair(null, 1000000)
+    }
+
+    fun detectGpuClockDivider(path: String): Int {
+        return try {
+            val raw = File(path).readText().trim().toLong()
+            when {
+                raw > 100_000 -> 1_000_000  // Hz → MHz
+                raw > 100 -> 1_000          // kHz → MHz
+                else -> 1                    // already MHz
+            }.also { divider ->
+                Log.d(TAG, "Detected GPU clock divider for $path: $divider (raw: $raw)")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to detect GPU clock divider for $path, using default 1000000")
+            1_000_000
+        }
+    }
+
     /** @return CPU temperature sysfs path or null if not supported */
     fun getCpuTempPath(): String? = findCpuTempPath()
 
@@ -351,6 +403,9 @@ object SysfsDetector {
             "battery_temp" -> getBatteryTempPath() != null
             "cpu_temp" -> getCpuTempPath() != null
             "cpu_base" -> getCpuBasePath() != null
+            "gpu_usage" -> getGpuUsagePath() != null
+            "gpu_clock" -> getGpuClockInfo().first != null
+            "ram_freq" -> getRamFreqPath() != null
             else -> false
         }
     }
