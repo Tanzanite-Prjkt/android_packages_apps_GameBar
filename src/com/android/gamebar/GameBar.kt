@@ -132,6 +132,7 @@ class GameBar private constructor(context: Context) {
     private var showGpuTemp = false
     private var showRamSpeed = false
     private var showRamTemp = false
+    private var showThermalThrottle = false
 
     // Touch handling
     private var longPressEnabled = false
@@ -272,6 +273,7 @@ class GameBar private constructor(context: Context) {
 
         showRamSpeed = prefs.getBoolean("game_bar_ram_speed_enable", false)
         showRamTemp = prefs.getBoolean("game_bar_ram_temp_enable", false)
+        showThermalThrottle = prefs.getBoolean("game_bar_thermal_throttle_enable", false)
 
         singleTapEnabled = prefs.getBoolean("game_bar_single_tap_enable", true)
         singleTapFunction = sanitizeGestureFunction(
@@ -735,14 +737,21 @@ class GameBar private constructor(context: Context) {
             statViews.add(createStatLine("GPU Freq", if (gpuClockStr == "N/A") "N/A" else "${gpuClockStr}MHz"))
         }
 
-        // 9) GPU temp - Always collect for logging
+        // 9) GPU temp
         var gpuTempStr = "N/A"
         gpuTempStr = GameBarGpuInfo.getGpuTemp()
         if (showGpuTemp) {
             statViews.add(createStatLine("GPU Temp", if (gpuTempStr == "N/A") "N/A" else "${gpuTempStr}°C"))
         }
 
-        // 10) Battery level - logging data
+        // 10) Thermal throttle status
+        val thermalState = GameBarThermalInfo.getThermalState(context)
+        val thermalStr = thermalState.label
+        if (showThermalThrottle) {
+            statViews.add(createColoredStatLine("Throttle", thermalStr, thermalState.colorHex))
+        }
+
+        // 11) Battery level
         val batteryLevelStr = GameBarBatteryInfo.getBatteryLevelPercent(context)
         val batteryPowerWattStr = GameBarBatteryInfo.getBatteryPowerWatt(context)
 
@@ -788,6 +797,7 @@ class GameBar private constructor(context: Context) {
             val logBatteryLevel = batteryLevelStr
             val logPowerWatt = batteryPowerWattStr
             val logAppRamUsage = if (prefs.getBoolean(GameBarLoggingPrefs.PREF_LOG_RAM, true)) GameBarMemInfo.getAppRamUsage(context, pkgName) else "N/A"
+            val logThermal = if (prefs.getBoolean(GameBarLoggingPrefs.PREF_LOG_THERMAL, true)) thermalStr else "N/A"
 
             GameDataExport.getInstance().addOverlayData(
                     dateTime,
@@ -806,7 +816,8 @@ class GameBar private constructor(context: Context) {
                     logGpuTemp,
                     logBatteryLevel,
                     logPowerWatt,
-                    logAppRamUsage
+                    logAppRamUsage,
+                    logThermal
             )
         }
 
@@ -1026,6 +1037,58 @@ class GameBar private constructor(context: Context) {
         }
     }
 
+    private fun createColoredStatLine(title: String, rawValue: String, colorHex: String): LinearLayout {
+        val lineLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        if (overlayFormat == "full") {
+            val tvTitle = TextView(context).apply {
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp.toFloat())
+                try {
+                    setTextColor(Color.parseColor(titleColorHex))
+                } catch (e: Exception) {
+                    setTextColor(Color.WHITE)
+                }
+                setTypeface(this@GameBar.getTypeface(), Typeface.NORMAL)
+                text = "$title "
+            }
+            val tvValue = TextView(context).apply {
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp.toFloat())
+                try {
+                    setTextColor(Color.parseColor(colorHex))
+                } catch (e: Exception) {
+                    setTextColor(Color.WHITE)
+                }
+                setTypeface(this@GameBar.getTypeface(), Typeface.NORMAL)
+                text = rawValue
+            }
+            lineLayout.addView(tvTitle)
+            lineLayout.addView(tvValue)
+        } else {
+            val tvMinimal = TextView(context).apply {
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp.toFloat())
+                try {
+                    setTextColor(Color.parseColor(colorHex))
+                } catch (e: Exception) {
+                    setTextColor(Color.WHITE)
+                }
+                setTypeface(this@GameBar.getTypeface(), Typeface.NORMAL)
+                text = rawValue
+            }
+            lineLayout.addView(tvMinimal)
+        }
+
+        val spacingPx = dpToPx(context, itemSpacingDp)
+        lineLayout.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(spacingPx, spacingPx / 2, spacingPx, spacingPx / 2)
+        }
+        return lineLayout
+    }
+
     // Public setter methods for feature toggles
     fun setShowBatteryTemp(show: Boolean) { showBatteryTemp = show }
     fun setShowCpuUsage(show: Boolean) { showCpuUsage = show }
@@ -1039,6 +1102,7 @@ class GameBar private constructor(context: Context) {
     fun setShowGpuTemp(show: Boolean) { showGpuTemp = show }
     fun setShowRamSpeed(show: Boolean) { showRamSpeed = show }
     fun setShowRamTemp(show: Boolean) { showRamTemp = show }
+    fun setShowThermalThrottle(show: Boolean) { showThermalThrottle = show }
 
     fun updateTextSize(sp: Int) {
         textSizeSp = sp

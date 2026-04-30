@@ -18,4 +18,5 @@ object GameBarLoggingPrefs {
     const val PREF_LOG_GPU_USAGE = "gamebar_log_gpu_usage"
     const val PREF_LOG_GPU_CLOCK = "gamebar_log_gpu_clock"
     const val PREF_LOG_GPU_TEMP = "gamebar_log_gpu_temp"
+    const val PREF_LOG_THERMAL = "gamebar_log_thermal"
 }

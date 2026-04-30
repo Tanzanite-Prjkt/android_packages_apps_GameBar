@@ -58,7 +58,8 @@ class PerAppLogManager private constructor() {
             "GPU_Temp",
             "Battery_Level",
             "Power_W",
-            "App_RAM_Usage"
+            "App_RAM_Usage",
+            "Thermal_Status"
         )
     }
 
@@ -220,7 +221,8 @@ class PerAppLogManager private constructor() {
         gpuTemp: String,
         batteryLevel: String,
         powerWatt: String,
-        appRamUsage: String
+        appRamUsage: String,
+        thermalStatus: String
     ) {
         val logData = activeLogSessions[packageName] ?: return
 
@@ -254,7 +256,8 @@ class PerAppLogManager private constructor() {
             gpuTemp,
             batteryLevel,
             powerWatt,
-            appRamUsage
+            appRamUsage,
+            thermalStatus
         )
         logData.add(row)
     }

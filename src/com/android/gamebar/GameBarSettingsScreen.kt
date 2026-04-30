@@ -171,6 +171,7 @@ fun GameBarSettingsScreen(
     var gpuUsageEnable by remember { mutableStateOf(prefs.getBoolean("game_bar_gpu_usage_enable", true)) }
     var gpuClockEnable by remember { mutableStateOf(prefs.getBoolean("game_bar_gpu_clock_enable", false)) }
     var gpuTempEnable by remember { mutableStateOf(prefs.getBoolean("game_bar_gpu_temp_enable", false)) }
+    var thermalThrottleEnable by remember { mutableStateOf(prefs.getBoolean("game_bar_thermal_throttle_enable", false)) }
 
     var fpsDisplayMode by remember { mutableStateOf(prefs.getString("game_bar_fps_display_mode", "basic") ?: "basic") }
     var fpsMethod by remember { mutableStateOf(prefs.getString("game_bar_fps_method", "new") ?: "new") }
@@ -397,6 +398,7 @@ fun GameBarSettingsScreen(
                                 SettingsSwitchRow("GPU Usage", "Show GPU usage percentage", gpuUsageEnable) { gpuUsageEnable = it; putBoolean("game_bar_gpu_usage_enable", it); applyPrefs() }
                                 SettingsSwitchRow("GPU Clock Speed", "Show current GPU clock frequency", gpuClockEnable) { gpuClockEnable = it; putBoolean("game_bar_gpu_clock_enable", it); applyPrefs() }
                                 SettingsSwitchRow("GPU Temperature", "Show current GPU temperature", gpuTempEnable) { gpuTempEnable = it; putBoolean("game_bar_gpu_temp_enable", it); applyPrefs() }
+                                SettingsSwitchRow("Thermal Throttle Status", "Show real-time thermal throttling level", thermalThrottleEnable) { thermalThrottleEnable = it; putBoolean("game_bar_thermal_throttle_enable", it); applyPrefs() }
                             }
                         }
                     }
