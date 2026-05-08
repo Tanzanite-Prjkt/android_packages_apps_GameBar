@@ -133,6 +133,8 @@ class GameBar private constructor(context: Context) {
     private var showRamSpeed = false
     private var showRamTemp = false
     private var showThermalThrottle = false
+    private var showFpsGraph = false
+    private var fpsGraphView: GameBarFpsGraphView? = null
 
     // Touch handling
     private var longPressEnabled = false
@@ -274,6 +276,7 @@ class GameBar private constructor(context: Context) {
         showRamSpeed = prefs.getBoolean("game_bar_ram_speed_enable", false)
         showRamTemp = prefs.getBoolean("game_bar_ram_temp_enable", false)
         showThermalThrottle = prefs.getBoolean("game_bar_thermal_throttle_enable", false)
+        showFpsGraph = prefs.getBoolean("game_bar_fps_graph_enable", false)
 
         singleTapEnabled = prefs.getBoolean("game_bar_single_tap_enable", true)
         singleTapFunction = sanitizeGestureFunction(
@@ -564,6 +567,7 @@ class GameBar private constructor(context: Context) {
         overlayView = null
         rootLayout = null
         layoutParams = null
+        fpsGraphView = null
         layoutChanged = true // Mark layout as changed
         
         unbindScreenRecorder()
@@ -641,6 +645,26 @@ class GameBar private constructor(context: Context) {
                 // Basic mode
                 statViews.add(createStatLine("FPS", fpsStr))
             }
+        }
+
+        if (showFpsGraph) {
+            if (fpsGraphView == null) {
+                fpsGraphView = GameBarFpsGraphView(context)
+            }
+            if (fpsVal >= 0) fpsGraphView?.pushFps(fpsVal)
+
+            val graphHeight = dpToPx(context, 36)
+            val graphWidth = dpToPx(context, 110)
+            val spacingPx = dpToPx(context, itemSpacingDp)
+            val graphLp = LinearLayout.LayoutParams(graphWidth, graphHeight).apply {
+                setMargins(spacingPx, spacingPx / 2, spacingPx, spacingPx / 2)
+            }
+            fpsGraphView?.layoutParams = graphLp
+            val parent = fpsGraphView?.parent
+            if (parent is ViewGroup) parent.removeView(fpsGraphView)
+            statViews.add(fpsGraphView!!)
+        } else {
+            fpsGraphView = null
         }
 
         // 1.1) Frame Time - Calculate from FPS
@@ -1103,6 +1127,10 @@ class GameBar private constructor(context: Context) {
     fun setShowRamSpeed(show: Boolean) { showRamSpeed = show }
     fun setShowRamTemp(show: Boolean) { showRamTemp = show }
     fun setShowThermalThrottle(show: Boolean) { showThermalThrottle = show }
+    fun setShowFpsGraph(show: Boolean) {
+        showFpsGraph = show
+        if (!show) fpsGraphView = null
+    }
 
     fun updateTextSize(sp: Int) {
         textSizeSp = sp

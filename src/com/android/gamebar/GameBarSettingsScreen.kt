@@ -172,6 +172,7 @@ fun GameBarSettingsScreen(
     var gpuClockEnable by remember { mutableStateOf(prefs.getBoolean("game_bar_gpu_clock_enable", false)) }
     var gpuTempEnable by remember { mutableStateOf(prefs.getBoolean("game_bar_gpu_temp_enable", false)) }
     var thermalThrottleEnable by remember { mutableStateOf(prefs.getBoolean("game_bar_thermal_throttle_enable", false)) }
+    var fpsGraphEnable by remember { mutableStateOf(prefs.getBoolean("game_bar_fps_graph_enable", false)) }
 
     var fpsDisplayMode by remember { mutableStateOf(prefs.getString("game_bar_fps_display_mode", "basic") ?: "basic") }
     var fpsMethod by remember { mutableStateOf(prefs.getString("game_bar_fps_method", "new") ?: "new") }
@@ -388,6 +389,7 @@ fun GameBarSettingsScreen(
                                     applyPrefs(rebuild = true)
                                 }
                                 SettingsSwitchRow("Frame Time", "Show frame time in milliseconds", frameTimeEnable) { frameTimeEnable = it; putBoolean("game_bar_frame_time_enable", it); applyPrefs() }
+                                SettingsSwitchRow("FPS Graph", "Live sparkline chart showing FPS history", fpsGraphEnable) { fpsGraphEnable = it; putBoolean("game_bar_fps_graph_enable", it); applyPrefs() }
                                 SettingsSwitchRow("Device Temperature", "Show device temperature", tempEnable) { tempEnable = it; putBoolean("game_bar_temp_enable", it); applyPrefs() }
                                 SettingsSwitchRow("CPU Usage", "Show current CPU usage", cpuUsageEnable) { cpuUsageEnable = it; putBoolean("game_bar_cpu_usage_enable", it); applyPrefs() }
                                 SettingsSwitchRow("CPU Clock Speeds", "Show current CPU clock speeds for each core", cpuClockEnable) { cpuClockEnable = it; putBoolean("game_bar_cpu_clock_enable", it); applyPrefs() }
