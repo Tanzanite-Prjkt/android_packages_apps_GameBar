@@ -53,6 +53,7 @@ class PresetManager private constructor(private val context: Context) {
             "game_bar_gpu_temp_enable",
             "game_bar_thermal_throttle_enable",
             "game_bar_fps_graph_enable",
+            "game_bar_live_perf_card_enable",
             
             // FPS Measurement Method
             "game_bar_fps_method",

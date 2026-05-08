@@ -99,7 +99,8 @@ private data class FpsSessionItem(
     val avgFps: Float,
     val avgPower: Float,
     val duration: String,
-    val resolution: String
+    val resolution: String,
+    val thermalStatus: String = "Unknown"
 )
 
 private enum class SessionDetailTab {
@@ -330,8 +331,9 @@ private fun FpsRecordSessionRow(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    val thermalText = if (session.thermalStatus != "Unknown" && session.thermalStatus != "Normal") "   Warn: ${session.thermalStatus}" else ""
                     Text(
-                        text = "Power: $power   Time: ${session.duration}",
+                        text = "Power: $power   Time: ${session.duration}$thermalText",
                         color = subTextColor,
                         fontSize = 12.sp,
                         maxLines = 1,
@@ -522,6 +524,15 @@ private fun FpsRecordDetailScreen(
                                     FpsRecordImageGenerator.generateAndShareStatsImage(context, session.appName, analytics)
                                 }
                             )
+                            DropdownMenuItem(
+                                text = { Text("Share Performance Card") },
+                                onClick = {
+                                    showShareMenu = false
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        GameBarPerformanceCard.generateAndShare(context, session.appName, analytics)
+                                    }
+                                }
+                            )
                         }
                     }
                     Box {
@@ -567,6 +578,22 @@ private fun FpsRecordDetailScreen(
                                     ).show()
                                 }
                             )
+                            DropdownMenuItem(
+                                text = { Text("Save Performance Card (PNG)") },
+                                onClick = {
+                                    showSaveMenu = false
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        val ok = GameBarPerformanceCard.saveCard(context, session.appName, analytics)
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(
+                                                context,
+                                                if (ok) "Performance card saved to Downloads" else "Failed to save card",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                }
+                            )
                         }
                     }
                 }
@@ -587,6 +614,58 @@ private fun FpsRecordDetailScreen(
                     maxLines = 6,
                     placeholder = { Text("Description") },
                 )
+            }
+        }
+
+        item {
+            val score = remember(analytics) { GameBarPerformanceCard.computeScore(analytics) }
+            val scoreColor = when {
+                score >= 85 -> Color(0xFF3FB950)
+                score >= 65 -> Color(0xFF58A6FF)
+                score >= 45 -> Color(0xFFFFC107)
+                score >= 25 -> Color(0xFFFF8626)
+                else -> Color(0xFFFF6B6B)
+            }
+            val grade = when {
+                score >= 90 -> "EXCELLENT"
+                score >= 75 -> "GREAT"
+                score >= 60 -> "GOOD"
+                score >= 40 -> "FAIR"
+                score >= 20 -> "POOR"
+                else -> "CRITICAL"
+            }
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column {
+                        Text(
+                            text = "Performance Score",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = grade,
+                            color = scoreColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                        )
+                    }
+                    Text(
+                        text = score.toString(),
+                        color = scoreColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 48.sp,
+                    )
+                }
             }
         }
 
@@ -2278,7 +2357,8 @@ private fun loadSessions(pm: android.content.pm.PackageManager): List<FpsSession
                     avgFps = avgFps,
                     avgPower = avgPower,
                     duration = duration,
-                    resolution = analytics?.resolution ?: "Unknown"
+                    resolution = analytics?.resolution ?: "Unknown",
+                    thermalStatus = analytics?.cpuStats?.worstThermalStatus ?: "Unknown"
                 )
             }
         }

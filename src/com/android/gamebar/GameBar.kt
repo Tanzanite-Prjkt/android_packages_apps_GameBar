@@ -135,6 +135,8 @@ class GameBar private constructor(context: Context) {
     private var showThermalThrottle = false
     private var showFpsGraph = false
     private var fpsGraphView: GameBarFpsGraphView? = null
+    private var showLivePerfCard = false
+    private var livePerfCardView: GameBarLivePerformanceCardView? = null
 
     // Touch handling
     private var longPressEnabled = false
@@ -277,6 +279,7 @@ class GameBar private constructor(context: Context) {
         showRamTemp = prefs.getBoolean("game_bar_ram_temp_enable", false)
         showThermalThrottle = prefs.getBoolean("game_bar_thermal_throttle_enable", false)
         showFpsGraph = prefs.getBoolean("game_bar_fps_graph_enable", false)
+        showLivePerfCard = prefs.getBoolean("game_bar_live_perf_card_enable", false)
 
         singleTapEnabled = prefs.getBoolean("game_bar_single_tap_enable", true)
         singleTapFunction = sanitizeGestureFunction(
@@ -568,6 +571,7 @@ class GameBar private constructor(context: Context) {
         rootLayout = null
         layoutParams = null
         fpsGraphView = null
+        livePerfCardView = null
         layoutChanged = true // Mark layout as changed
         
         unbindScreenRecorder()
@@ -778,6 +782,42 @@ class GameBar private constructor(context: Context) {
         // 11) Battery level
         val batteryLevelStr = GameBarBatteryInfo.getBatteryLevelPercent(context)
         val batteryPowerWattStr = GameBarBatteryInfo.getBatteryPowerWatt(context)
+
+        if (showLivePerfCard) {
+            if (livePerfCardView == null) {
+                livePerfCardView = GameBarLivePerformanceCardView(context)
+            }
+            
+            val cpuTempF = cpuTempStr.toFloatOrNull() ?: 0f
+            val cpuUsageF = cpuUsageStr.toFloatOrNull() ?: 0f
+            val gpuUsageF = gpuUsageStr.toFloatOrNull() ?: 0f
+            val powerW = batteryPowerWattStr.replace("W","").trim().toFloatOrNull() ?: 0f
+            val thermalLabel = thermalState.label
+            val jitter = fpsMeter.getJitter()
+            
+            livePerfCardView?.updateData(
+                fps = fpsVal.toFloat(),
+                cpuTemp = cpuTempF,
+                cpuUsage = cpuUsageF,
+                gpuUsage = gpuUsageF,
+                powerWatt = powerW,
+                thermalStatus = thermalLabel,
+                jitter = jitter
+            )
+
+            val cardWidth = dpToPx(context, 320)
+            val cardHeight = dpToPx(context, 550)
+            val spacingPx = dpToPx(context, itemSpacingDp)
+            val cardLp = LinearLayout.LayoutParams(cardWidth, cardHeight).apply {
+                setMargins(spacingPx, spacingPx / 2, spacingPx, spacingPx / 2)
+            }
+            livePerfCardView?.layoutParams = cardLp
+            val parent = livePerfCardView?.parent
+            if (parent is ViewGroup) parent.removeView(livePerfCardView)
+            statViews.add(livePerfCardView!!)
+        } else {
+            livePerfCardView = null
+        }
 
         if (splitMode == "side_by_side") {
             layout.orientation = LinearLayout.HORIZONTAL

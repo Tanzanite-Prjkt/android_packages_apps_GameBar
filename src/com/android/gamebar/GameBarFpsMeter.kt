@@ -160,6 +160,18 @@ class GameBarFpsMeter private constructor(context: Context) {
             return sorted[index]
         }
     }
+
+    /**
+     * Get FPS Standard Deviation (Jitter)
+     */
+    fun getJitter(): Float {
+        synchronized(fpsHistory) {
+            if (fpsHistory.size < 2) return 0f
+            val avg = fpsHistory.average().toFloat()
+            val variance = fpsHistory.map { (it - avg) * (it - avg) }.average().toFloat()
+            return kotlin.math.sqrt(variance.toDouble()).toFloat()
+        }
+    }
     
     /**
      * Clear FPS history

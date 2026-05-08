@@ -58,7 +58,8 @@ data class CpuStatistics(
     val avgUsage: Double,
     val maxTemp: Double,
     val minTemp: Double,
-    val avgTemp: Double
+    val avgTemp: Double,
+    val worstThermalStatus: String = "Normal"
 ) : Serializable
 
 data class GpuStatistics(
@@ -102,6 +103,18 @@ class PerAppLogReader {
         private const val COL_BATTERY_LEVEL = 14
         private const val COL_POWER = 15
         private const val COL_APP_RAM_USAGE = 16
+        private const val COL_THERMAL_STATUS = 17
+
+        private fun getThermalSeverity(status: String): Int = when(status.lowercase(java.util.Locale.getDefault())) {
+            "normal" -> 0
+            "light" -> 1
+            "moderate" -> 2
+            "severe" -> 3
+            "critical" -> 4
+            "emergency" -> 5
+            "shutdown" -> 6
+            else -> -1
+        }
     }
 
     /**
@@ -146,6 +159,8 @@ class PerAppLogReader {
             var sessionStartTimeMs: Long = 0
             var powerColumnIndex = -1
             var COL_APP_RAM_USAGE_RUNTIME = -1
+            var worstThermalLevel = -1
+            var worstThermalStatus = "Normal"
 
             BufferedReader(FileReader(file)).use { reader ->
                 var line = reader.readLine()
@@ -459,6 +474,18 @@ class PerAppLogReader {
                                 }
                             }
 
+                            // Extract Thermal Status
+                            if (columns.size > COL_THERMAL_STATUS) {
+                                val statusStr = columns[COL_THERMAL_STATUS].trim()
+                                if (statusStr.isNotEmpty() && statusStr != "N/A" && statusStr != "-") {
+                                    val level = getThermalSeverity(statusStr)
+                                    if (level > worstThermalLevel) {
+                                        worstThermalLevel = level
+                                        worstThermalStatus = statusStr
+                                    }
+                                }
+                            }
+
                             // Extract timestamps for session duration
                             if (firstTimestamp == null) {
                                 firstTimestamp = timestampStr
@@ -484,7 +511,7 @@ class PerAppLogReader {
             val fpsStats = calculateFpsStatistics(fpsValues)
             
             // Calculate CPU statistics
-            val cpuStats = calculateCpuStatistics(cpuUsageValues, cpuTempValues)
+            val cpuStats = calculateCpuStatistics(cpuUsageValues, cpuTempValues, worstThermalStatus)
             
             // Calculate GPU statistics
             val gpuStats = calculateGpuStatistics(gpuUsageValues, gpuClockValues, gpuTempValues)
@@ -598,22 +625,19 @@ class PerAppLogReader {
     /**
      * Calculate CPU statistics
      */
-    private fun calculateCpuStatistics(cpuUsageValues: List<Double>, cpuTempValues: List<Double>): CpuStatistics {
-        val maxUsage = if (cpuUsageValues.isNotEmpty()) cpuUsageValues.maxOrNull() ?: 0.0 else 0.0
-        val minUsage = if (cpuUsageValues.isNotEmpty()) cpuUsageValues.minOrNull() ?: 0.0 else 0.0
-        val avgUsage = if (cpuUsageValues.isNotEmpty()) cpuUsageValues.average() else 0.0
-        
-        val maxTemp = if (cpuTempValues.isNotEmpty()) cpuTempValues.maxOrNull() ?: 0.0 else 0.0
-        val minTemp = if (cpuTempValues.isNotEmpty()) cpuTempValues.minOrNull() ?: 0.0 else 0.0
-        val avgTemp = if (cpuTempValues.isNotEmpty()) cpuTempValues.average() else 0.0
-        
+    private fun calculateCpuStatistics(
+        cpuUsageValues: List<Double>,
+        cpuTempValues: List<Double>,
+        worstThermalStatus: String
+    ): CpuStatistics {
         return CpuStatistics(
-            maxUsage = maxUsage,
-            minUsage = minUsage,
-            avgUsage = avgUsage,
-            maxTemp = maxTemp,
-            minTemp = minTemp,
-            avgTemp = avgTemp
+            maxUsage = if (cpuUsageValues.isNotEmpty()) cpuUsageValues.maxOrNull() ?: 0.0 else 0.0,
+            minUsage = if (cpuUsageValues.isNotEmpty()) cpuUsageValues.minOrNull() ?: 0.0 else 0.0,
+            avgUsage = if (cpuUsageValues.isNotEmpty()) cpuUsageValues.average() else 0.0,
+            maxTemp = if (cpuTempValues.isNotEmpty()) cpuTempValues.maxOrNull() ?: 0.0 else 0.0,
+            minTemp = if (cpuTempValues.isNotEmpty()) cpuTempValues.minOrNull() ?: 0.0 else 0.0,
+            avgTemp = if (cpuTempValues.isNotEmpty()) cpuTempValues.average() else 0.0,
+            worstThermalStatus = worstThermalStatus
         )
     }
     
