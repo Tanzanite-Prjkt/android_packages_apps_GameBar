@@ -1190,7 +1190,7 @@ private fun SummaryStatTile(
         )
         Text(
             text = stat.value,
-            color = Color(0xFFE6EDF3),
+            color = MaterialTheme.colorScheme.onSurface,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,

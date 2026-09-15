@@ -14,6 +14,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -492,7 +493,11 @@ fun GameBarSettingsScreen(
                             SettingsSectionCard(title = "Theme and Appearance") {
                                 SettingsSwitchRow(
                                     title = "AMOLED Black Theme",
-                                    summary = "Use deeper black surfaces for GameBar cards and pages",
+                                    summary = if (isSystemInDarkTheme()) {
+                                        "Use deeper black surfaces for GameBar cards and pages"
+                                    } else {
+                                        "Use deeper black surfaces for GameBar cards and pages (active in Dark theme)"
+                                    },
                                     checked = amoledBlackEnabled
                                 ) {
                                     UiStyleController.setAmoledBlackEnabled(context, it)

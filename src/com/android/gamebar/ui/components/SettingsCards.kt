@@ -22,6 +22,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -128,12 +129,18 @@ fun HeaderCard(title: String, summary: String) {
     val context = LocalContext.current
     UiStyleController.ensureInitialized(context)
     val amoledBlackEnabled by UiStyleController.amoledBlackEnabled.collectAsState()
+    val isDark = isSystemInDarkTheme()
+    val isAmoled = isDark && amoledBlackEnabled
     var visible by remember { mutableStateOf(false) }
-    val headerShadow = Shadow(
-        color = Color.Black.copy(alpha = 0.42f),
-        offset = androidx.compose.ui.geometry.Offset(0f, 2f),
-        blurRadius = 8f
-    )
+    val headerShadow = if (isDark) {
+        Shadow(
+            color = Color.Black.copy(alpha = 0.42f),
+            offset = androidx.compose.ui.geometry.Offset(0f, 2f),
+            blurRadius = 8f
+        )
+    } else {
+        Shadow.None
+    }
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn() + slideInVertically(initialOffsetY = { it / 3 }),
@@ -150,7 +157,7 @@ fun HeaderCard(title: String, summary: String) {
         Card(
             shape = MaterialTheme.shapes.extraLarge,
             colors = CardDefaults.cardColors(
-                containerColor = if (amoledBlackEnabled) Color(0xFF121212) else MaterialTheme.colorScheme.surfaceContainerHigh
+                containerColor = if (isAmoled) Color(0xFF121212) else MaterialTheme.colorScheme.surfaceContainerHigh
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
@@ -211,6 +218,8 @@ fun GameBarFloatingBottomNavBar(
     val context = LocalContext.current
     UiStyleController.ensureInitialized(context)
     val amoledBlackEnabled by UiStyleController.amoledBlackEnabled.collectAsState()
+    val isDark = isSystemInDarkTheme()
+    val isAmoled = isDark && amoledBlackEnabled
     val tabs = GameBarNavTab.entries
     val selectedIndex = tabs.indexOf(selected).coerceAtLeast(0)
     val animatedSelectedIndex by animateFloatAsState(
@@ -239,14 +248,14 @@ fun GameBarFloatingBottomNavBar(
                 .shadow(
                     elevation = 18.dp,
                     shape = RoundedCornerShape(28.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.38f),
-                    spotColor = Color.Black.copy(alpha = 0.54f),
+                    ambientColor = if (isDark) Color.Black.copy(alpha = 0.38f) else Color.Black.copy(alpha = 0.08f),
+                    spotColor = if (isDark) Color.Black.copy(alpha = 0.54f) else Color.Black.copy(alpha = 0.12f),
                 ),
             shape = RoundedCornerShape(28.dp),
             color = Color.Transparent,
             border = BorderStroke(
                 width = 1.dp,
-                color = if (amoledBlackEnabled) {
+                color = if (isAmoled) {
                     MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
                 } else {
                     MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
@@ -261,7 +270,7 @@ fun GameBarFloatingBottomNavBar(
                     .height(68.dp)
                     .background(
                         brush = Brush.verticalGradient(
-                            colors = if (amoledBlackEnabled) {
+                            colors = if (isAmoled) {
                                 listOf(Color(0xFF1A1A1A), Color(0xFF0E0E0E))
                             } else {
                                 listOf(
@@ -329,11 +338,13 @@ fun SettingsSectionCard(
     val context = LocalContext.current
     UiStyleController.ensureInitialized(context)
     val amoledBlackEnabled by UiStyleController.amoledBlackEnabled.collectAsState()
+    val isDark = isSystemInDarkTheme()
+    val isAmoled = isDark && amoledBlackEnabled
     val cardShape = RoundedCornerShape(26.dp)
     Card(
         shape = cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = if (amoledBlackEnabled) Color(0xFF121212) else MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = if (isAmoled) Color(0xFF121212) else MaterialTheme.colorScheme.surfaceContainerHigh
         ),
         border = BorderStroke(
             width = 1.dp,
@@ -370,16 +381,22 @@ fun SectionSubHeader(
     val context = LocalContext.current
     UiStyleController.ensureInitialized(context)
     val amoledBlackEnabled by UiStyleController.amoledBlackEnabled.collectAsState()
-    val headerTextShadow = Shadow(
-        color = Color.Black.copy(alpha = 0.42f),
-        offset = androidx.compose.ui.geometry.Offset(0f, 2f),
-        blurRadius = 8f
-    )
+    val isDark = isSystemInDarkTheme()
+    val isAmoled = isDark && amoledBlackEnabled
+    val headerTextShadow = if (isDark) {
+        Shadow(
+            color = Color.Black.copy(alpha = 0.42f),
+            offset = androidx.compose.ui.geometry.Offset(0f, 2f),
+            blurRadius = 8f
+        )
+    } else {
+        Shadow.None
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = if (amoledBlackEnabled) Color(0xFF171717) else MaterialTheme.colorScheme.secondaryContainer
+            containerColor = if (isAmoled) Color(0xFF171717) else MaterialTheme.colorScheme.secondaryContainer
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -389,8 +406,8 @@ fun SectionSubHeader(
                 .background(
                     Brush.linearGradient(
                         colors = listOf(
-                            if (amoledBlackEnabled) Color(0xFF171717) else MaterialTheme.colorScheme.secondaryContainer,
-                            if (amoledBlackEnabled) Color(0xFF1E2833) else MaterialTheme.colorScheme.primaryContainer
+                            if (isAmoled) Color(0xFF171717) else MaterialTheme.colorScheme.secondaryContainer,
+                            if (isAmoled) Color(0xFF1E2833) else MaterialTheme.colorScheme.primaryContainer
                         ),
                         start = androidx.compose.ui.geometry.Offset(0f, 0f),
                         end = androidx.compose.ui.geometry.Offset(800f, 500f)
@@ -512,6 +529,8 @@ fun HomeMenuCard(
     val context = LocalContext.current
     UiStyleController.ensureInitialized(context)
     val amoledBlackEnabled by UiStyleController.amoledBlackEnabled.collectAsState()
+    val isDark = isSystemInDarkTheme()
+    val isAmoled = isDark && amoledBlackEnabled
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -519,7 +538,7 @@ fun HomeMenuCard(
             .clickable { onClick() },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = if (amoledBlackEnabled) Color(0xFF0F0F0F) else MaterialTheme.colorScheme.surfaceContainer
+            containerColor = if (isAmoled) Color(0xFF0F0F0F) else MaterialTheme.colorScheme.surfaceContainer
         ),
         border = BorderStroke(
             1.dp,
